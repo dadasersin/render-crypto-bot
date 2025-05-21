@@ -1,0 +1,12 @@
+{
+  "name": "render-crypto-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@binance/connector": "^2.0.0",
+    "dotenv": "^16.0.3"
+  }
+}
