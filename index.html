@@ -1,0 +1,27 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crypto Trading Bot Paneli</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>BNB/USDT Kripto Paneli</h1>
+  <canvas id="priceChart" width="800" height="400"></canvas>
+  <div>
+    <button onclick="buyCrypto()">Al</button>
+    <button onclick="sellCrypto()">Sat</button>
+  </div>
+  <div>
+    <label><input type="checkbox" checked disabled> RSI-7</label>
+    <label><input type="checkbox" checked disabled> RSI-14</label>
+    <label><input type="checkbox" checked disabled> RSI-24</label>
+    <label><input type="checkbox" onchange="toggleIndicator('macd')"> MACD</label>
+    <label><input type="checkbox" onchange="toggleIndicator('bollinger')"> Bollinger Bands</label>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
