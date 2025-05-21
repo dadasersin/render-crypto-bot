@@ -2,9 +2,8 @@ const express = require('express');
 const http = require('http');
 const app = express();
 
-const PORT = process.env.PORT || 3000;  // Render için şart
+const PORT = process.env.PORT || 3000;
 
-// Örnek endpoint
 app.get('/', (req, res) => {
   res.send('Sunucu çalışıyor!');
 });
