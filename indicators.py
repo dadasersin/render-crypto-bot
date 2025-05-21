@@ -1,64 +1,63 @@
 import pandas as pd
-import numpy as np
+import ta
 
-# RSI (Relative Strength Index)
-def rsi(df, period=14, column='close'):
-    delta = df[column].diff()
-    gain = delta.where(delta > 0, 0.0)
-    loss = -delta.where(delta < 0, 0.0)
-    avg_gain = gain.rolling(window=period).mean()
-    avg_loss = loss.rolling(window=period).mean()
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+def apply_indicators(df, settings):
+    # RSI
+    for period in settings.get('rsi', [14]):
+        df[f'RSI_{period}'] = ta.momentum.RSIIndicator(df['close'], window=period).rsi()
+    
+    # MACD
+    if settings.get('macd', True):
+        macd = ta.trend.MACD(df['close'])
+        df['MACD'] = macd.macd()
+        df['MACD_signal'] = macd.macd_signal()
+    
+    # Bollinger Bands
+    if settings.get('bollinger', True):
+        bb = ta.volatility.BollingerBands(df['close'], window=20, window_dev=2)
+        df['BB_upper'] = bb.bollinger_hband()
+        df['BB_lower'] = bb.bollinger_lband()
+    
+    # Moving Averages (SMA)
+    for period in settings.get('ma', [7, 14, 50, 200]):
+        df[f'SMA_{period}'] = ta.trend.SMAIndicator(df['close'], window=period).sma_indicator()
+    
+    # Exponential Moving Averages (EMA)
+    for period in settings.get('ema', [7, 14, 50, 200]):
+        df[f'EMA_{period}'] = ta.trend.EMAIndicator(df['close'], window=period).ema_indicator()
+    
+    # Stochastic RSI
+    if settings.get('stoch_rsi', True):
+        stoch = ta.momentum.StochRSIIndicator(df['close'])
+        df['StochRSI_k'] = stoch.stochrsi_k()
+        df['StochRSI_d'] = stoch.stochrsi_d()
+    
+    # Volume (hacim)
+    if settings.get('volume', True):
+        df['Volume_MA_20'] = df['volume'].rolling(window=20).mean()
+    
+    # Parabolic SAR
+    if settings.get('parabolic_sar', True):
+        sar = ta.trend.PSARIndicator(df['high'], df['low'], df['close'])
+        df['Parabolic_SAR'] = sar.psar()
+    
+    # Ichimoku Cloud
+    if settings.get('ichimoku', True):
+        ichimoku = ta.trend.IchimokuIndicator(df['high'], df['low'])
+        df['Ichimoku_a'] = ichimoku.ichimoku_a()
+        df['Ichimoku_b'] = ichimoku.ichimoku_b()
+    
+    # ATR
+    if settings.get('atr', True):
+        atr = ta.volatility.AverageTrueRange(df['high'], df['low'], df['close'])
+        df['ATR'] = atr.average_true_range()
 
-# MACD (Moving Average Convergence Divergence)
-def macd(df, fast=12, slow=26, signal=9, column='close'):
-    exp1 = df[column].ewm(span=fast, adjust=False).mean()
-    exp2 = df[column].ewm(span=slow, adjust=False).mean()
-    macd_line = exp1 - exp2
-    signal_line = macd_line.ewm(span=signal, adjust=False).mean()
-    histogram = macd_line - signal_line
-    return macd_line, signal_line, histogram
+    # SuperTrend (manuel hesaplama)
+    if settings.get('supertrend', True):
+        df['HL2'] = (df['high'] + df['low']) / 2
+        atr = ta.volatility.AverageTrueRange(df['high'], df['low'], df['close']).average_true_range()
+        multiplier = settings.get('supertrend_multiplier', 3)
+        df['Upper_Band'] = df['HL2'] + (multiplier * atr)
+        df['Lower_Band'] = df['HL2'] - (multiplier * atr)
 
-# Bollinger Bands
-def bollinger_bands(df, period=20, std_dev=2, column='close'):
-    sma = df[column].rolling(window=period).mean()
-    rstd = df[column].rolling(window=period).std()
-    upper_band = sma + std_dev * rstd
-    lower_band = sma - std_dev * rstd
-    return upper_band, lower_band, sma
-
-# Simple Moving Average
-def moving_average(df, period=14, column='close'):
-    return df[column].rolling(window=period).mean()
-
-# Exponential Moving Average
-def ema(df, period=14, column='close'):
-    return df[column].ewm(span=period, adjust=False).mean()
-
-# Average True Range (ATR)
-def atr(df, period=14):
-    high_low = df['high'] - df['low']
-    high_close = np.abs(df['high'] - df['close'].shift())
-    low_close = np.abs(df['low'] - df['close'].shift())
-    ranges = pd.concat([high_low, high_close, low_close], axis=1)
-    true_range = ranges.max(axis=1)
-    atr = true_range.rolling(window=period).mean()
-    return atr
-
-# Volume
-def volume(df, column='volume'):
-    return df[column]
-
-# Placeholder: Stochastic RSI (requires implementation or TA-Lib)
-def stochastic_rsi(df):
-    pass
-
-# Placeholder: Parabolic SAR (requires implementation or TA-Lib)
-def parabolic_sar(df):
-    pass
-
-# Placeholder: Ichimoku Cloud (requires full implementation)
-def ichimoku(df):
-    pass
+    return df
