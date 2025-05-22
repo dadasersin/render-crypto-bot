@@ -3,10 +3,8 @@ import yfinance as yf
 from indicators import apply_indicators
 from plot import plot_indicators
 from config import settings
-
-# Binance işlemleri için yeni modüller
-from trading import execute_trades
-from signals import generate_signals  # Sinyal oluşturma fonksiyonunu ayrıca tanımlamalısın
+from signal_generator import generate_signals
+from flask import Flask, jsonify
 
 st.title("📈 Kripto İndikatör Dashboard")
 
@@ -19,17 +17,29 @@ if st.button("Veriyi Getir ve Grafiği Göster"):
     else:
         df.rename(columns=str.lower, inplace=True)
         df = apply_indicators(df, settings)
-
-        # Sinyalleri hesapla
-        df = generate_signals(df)
-
+        df = generate_signals(df, settings)
         fig = plot_indicators(df, settings)
         st.pyplot(fig)
 
-        # Eğer sinyal kolonu yoksa kullanıcıyı uyar
-        if 'signal' not in df.columns:
-            st.warning("Sinyal kolonunu oluşturmadınız, al-sat işlemi yapılmaz.")
-        else:
-            if st.button("Botu Çalıştır ve Al-Sat İşlemleri Yap"):
-                execute_trades(df, symbol.replace('-', '').upper())
-                st.success("Bot işlemi tamamlandı.")
+        st.subheader("Son Sinyaller")
+        st.dataframe(df[['close', 'signal']].tail(10))
+
+# Flask uygulaması olarak API endpoint açmak için:
+app = Flask(__name__)
+
+@app.route('/signal')
+def get_signal():
+    df = yf.download(symbol, period="30d", interval="1d")
+    if df.empty:
+        return jsonify({"error": "Data not found"}), 404
+    df.rename(columns=str.lower, inplace=True)
+    df = apply_indicators(df, settings)
+    df = generate_signals(df, settings)
+
+    # En son sinyali JSON olarak gönder
+    last_signal = df['signal'].iloc[-1]
+    last_price = df['close'].iloc[-1]
+    return jsonify({"symbol": symbol, "signal": last_signal, "price": last_price})
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8000)
